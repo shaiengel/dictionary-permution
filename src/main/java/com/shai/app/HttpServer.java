@@ -13,6 +13,12 @@ import java.util.List;
 @RestController
 public class HttpServer {
 
+    double numOfRequests = 0;
+    double avgTimeOfRequests = 0;
+
+    double startTime;
+    double handleTime;
+
     @Autowired
     CacheItems cacheItems;
 
@@ -25,15 +31,26 @@ public class HttpServer {
         System.out.println("New Request: GET /api/v1/similar?word=" + word);
 
         try {
+            startTime = System.nanoTime();
+            if (cacheItems.isReady() == false){
+                System.err.println("ERROR. didn't ready dictionary file");
+                throw new Exception();
+            }
+
             List<String> wordList =  cacheItems.getList(word);
+
             if (wordList == null){
-                builder = ResponseEntity.status(HttpStatus.BAD_REQUEST);
+                throw new Exception();
             }
             else{
                 jsonList.put("similar", wordList);
             }
 
+            handleTime = System.nanoTime() - startTime;
+            setAvgTime(handleTime);
+            numOfRequests++;
             System.out.println("Request output: word=" + word + " output = " + jsonList.toString());
+            //System.out.println("Request time " + (long)handleTime);
 
         }catch (Exception e){
             jsonList = null;
@@ -51,14 +68,27 @@ public class HttpServer {
 
         System.out.println("New Request: GET /api/v1/stats");
         long numOfWords = cacheItems.getNumOfWords();
-        double numOfRequests = cacheItems.getNumOfRequests();
-        double avgTimeOfRequests = cacheItems.getAvgTimeOfRequests();
+
 
         jsonList.put("totalWords", numOfWords);
-        jsonList.put("totalRequests", Math.round(numOfRequests));
-        jsonList.put("avgProcessingTimeNs", Math.round(avgTimeOfRequests));
+        jsonList.put("totalRequests", (long)numOfRequests);
+        jsonList.put("avgProcessingTimeNs", (long)avgTimeOfRequests);
         return builder.body(jsonList);
 
+    }
+
+    private void setAvgTime(double handleTime){
+        try {
+            //avgTimeOfRequests = (avgTimeOfRequests * numOfRequests + handleTime)/(numOfRequests + 1);
+            double temp = numOfRequests / (numOfRequests + 1);
+            if (numOfRequests == 0) {
+                avgTimeOfRequests = handleTime;
+            } else {
+                avgTimeOfRequests = (avgTimeOfRequests + handleTime / numOfRequests) * temp;
+            }
+        }catch (Exception e){
+            System.err.println("ERROR. setAvgTime, numOfRequests = " + numOfRequests + " avgTimeOfRequests = " + avgTimeOfRequests);
+        }
     }
 }
 
