@@ -16,9 +16,6 @@ public class HttpServer {
     double numOfRequests = 0;
     double avgTimeOfRequests = 0;
 
-    double startTime;
-    double handleTime;
-
     @Autowired
     CacheItems cacheItems;
 
@@ -31,7 +28,7 @@ public class HttpServer {
         System.out.println("New Request: GET /api/v1/similar?word=" + word);
 
         try {
-            startTime = System.nanoTime();
+            double startTime = System.nanoTime();
             if (cacheItems.isReady() == false){
                 System.err.println("ERROR. didn't ready dictionary file");
                 throw new Exception();
@@ -46,7 +43,7 @@ public class HttpServer {
                 jsonList.put("similar", wordList);
             }
 
-            handleTime = System.nanoTime() - startTime;
+            double handleTime = System.nanoTime() - startTime;
             setAvgTime(handleTime);
             numOfRequests++;
             System.out.println("Request output: word=" + word + " output = " + jsonList.toString());
